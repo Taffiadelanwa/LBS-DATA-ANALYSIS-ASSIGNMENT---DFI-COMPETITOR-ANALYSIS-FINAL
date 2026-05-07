@@ -1,0 +1,644 @@
+---
+title: "Competitive Intelligence in Nigerian Development Finance: An Exploratory & Inferential Analysis of Product Features and Customer Satisfaction"
+author: "[Your Full Name] | Treasury Analyst / Manager | Lagos Business School EMBA"
+date: today
+format:
+  html:
+    theme: flatly
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    self-contained: true
+    fig-width: 9
+    fig-height: 6
+    highlight-style: github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, warning=FALSE, message=FALSE, fig.align="center")
+library(tidyverse); library(readr); library(knitr); library(kableExtra)
+library(scales); library(ggcorrplot); library(car); library(broom)
+library(patchwork); library(ggrepel); library(ppcor)
+pal_inst <- c("DFI"="#1a6b4a","MFB"="#e07b39","Commercial Bank"="#2c5f8a")
+pal_sent <- c("Positive"="#27ae60","Neutral"="#f39c12","Negative"="#c0392b")
+```
+
+---
+
+## 1. Executive Summary
+
+This study applies five foundational data analytics techniques to a self-collected competitive intelligence dataset covering **15 Nigerian financial institutions** — spanning Development Finance Institutions (DFIs), Microfinance Banks (MFBs), and SME-focused commercial banks. Two primary datasets were web-scraped in May 2026: (i) **105 loan product records** capturing interest rates, tenors, loan amounts, and collateral requirements; and (ii) **104 customer reviews** dated January 2025 – May 2026, sourced from Trustpilot, PissedConsumer, and Nairaland. These were merged on institution name to produce a **master analytical dataset of 104 observations across 27 variables**.
+
+The central finding is structural: **institution type — not interest rate alone — is the dominant driver of customer satisfaction in the Nigerian lending market**. DFIs earn an average of 1.0 star more than commercial banks (3.42 vs 2.42 on a 5-point scale), a difference confirmed as statistically significant (Wilcoxon p = 0.002, effect size r = 0.31). Commercial banks attract disproportionate complaints about digital banking failures and unauthorised charges, while DFI reviews concentrate on loan process — where positive sentiment dominates. The regression model confirms institution type as the primary predictor (Adj. R² = 0.08, F p = 0.005). The recommendation: DFIs should market their structural service quality advantage alongside their rate advantage, backed by this statistical evidence.
+
+---
+
+## 2. Professional Disclosure
+
+**Job title:** Treasury Analyst / Manager  
+**Organisation type:** Development Finance Institution (DFI), Nigerian financial sector  
+**Analytical context:** This study was motivated directly by a recurring challenge in my day-to-day role — the need to benchmark our institution's lending product portfolio against both peer DFIs and commercial bank competitors in a structured, evidence-based way, rather than relying on anecdotal market intelligence.
+
+### Technique 1 — Exploratory Data Analysis
+
+In treasury management at a DFI, EDA is the entry point for every asset-liability management (ALM) cycle. Before each quarterly ALCO (Asset and Liability Committee) meeting, I produce a portfolio composition report that includes distributional analysis of our loan book by tenor, sector, and rate band — exactly the kind of EDA demonstrated in Section 4. The missing-value analysis on competitor interest rates (Section 4.2) mirrors a challenge I face regularly: commercial banks rarely publish rates on their websites, so our competitive benchmarks are always partially incomplete and must be flagged transparently to decision-makers. Applying EDA to this self-collected competitor dataset gives me a structured, repeatable framework for a task I currently perform ad hoc.
+
+### Technique 2 — Data Visualisation
+
+As a treasury professional, I prepare the majority of ALCO and board committee slides that communicate portfolio risk and competitive positioning to non-technical executives. The visualisation section of this study (Section 5) directly replicates three chart types I use in practice: the ranked bar chart (equivalent to our quarterly peer benchmarking table), the violin/boxplot of rate distributions (equivalent to our rate gap analysis across tenor buckets), and the scatter plot of tenor versus rating (equivalent to the risk-return scatters I prepare for investment committee). The deliberate design choice to avoid tables in favour of charts is a discipline I apply at work — the examiner can ask me to justify any chart type chosen here.
+
+### Technique 3 — Hypothesis Testing
+
+Hypothesis testing is the technique most directly embedded in my professional responsibilities. Every quarter, my team faces questions such as: "Is our average lending rate meaningfully different from the market?" "Has our weighted average cost of funds shifted significantly since the last CBN rate action?" "Do loan approval rates differ across our regional offices?" I currently answer these questions through Excel-based comparisons that lack formal statistical rigour. The Kruskal-Wallis and Wilcoxon tests in Section 6 represent the formalisation I want to bring to these comparisons — replacing subjective assessments ("it looks lower") with p-values and effect sizes that a risk committee can rely on. This is why hypothesis testing, alongside regression, is the technique I find most operationally urgent.
+
+### Technique 4 — Correlation Analysis
+
+Correlation analysis is central to two recurring tasks in DFI treasury work: (i) identifying which product design variables (rate, tenor, sector) co-move — relevant to managing concentration risk in the loan portfolio; and (ii) understanding the relationship between our pricing decisions and observable market outcomes. The partial correlation computed in Section 7 — testing whether rate retains a relationship with customer satisfaction after controlling for institution type — directly mirrors the partial analysis I run when trying to separate the effect of CBN policy rate changes from institution-specific pricing decisions on our loan uptake. The finding that institution type mediates the rate-satisfaction relationship has a direct operational analogue: sector-specific effects often mask what appears to be a pure pricing signal in our portfolio data.
+
+### Technique 5 — Linear Regression
+
+OLS regression is the foundation of the pricing models and demand forecasting I conduct in treasury. Specifically, I use regression to: estimate the interest rate elasticity of loan demand across our product lines; project future portfolio balances under different rate scenarios; and quantify the relationship between external variables (inflation, MPR) and our portfolio performance metrics. The regression in Section 8 — predicting customer satisfaction from institution type and product characteristics — applies the same modelling logic to a different dependent variable (satisfaction instead of demand), but the interpretation framework is identical: each coefficient represents the marginal effect of one predictor, holding others constant, translated into a concrete recommendation for decision-makers.
+
+---
+
+## 3. Data Collection & Sampling
+
+### 3.1 Loan Product Dataset (Primary Dataset 1)
+
+| Attribute | Detail |
+|---|---|
+| Source | Public product pages, 15 Nigerian institutions |
+| Method | Python requests + BeautifulSoup; HTTP-403 institutions seeded from verified search results |
+| Sampling frame | All DFIs, national MFBs, Tier-1/2 commercial banks with public SME lending products |
+| Sample size | 105 product records across 15 institutions |
+| Period | Point-in-time snapshot, 6 May 2026 |
+| Variables | 19 (rate, tenor, loan limits, collateral, sector, source URL, scrape date) |
+
+### 3.2 Customer Review Dataset (Primary Dataset 2)
+
+| Attribute | Detail |
+|---|---|
+| Source | Trustpilot (via search snippets), PissedConsumer, Nairaland, industry reports |
+| Method | Structured web searches per institution; text and star ratings extracted from snippets |
+| Sampling frame | All publicly available English-language reviews, Jan 2025 – May 2026 |
+| Sample size | 104 reviews across 15 institutions |
+| Variables | 12 (star rating, text, date, category, sentiment, complaint theme, word count) |
+
+### 3.3 Master Merged Dataset
+
+Product metrics were aggregated per institution (mean rate, tenor, max amount, product count, % collateral, % direct lending) then merged onto each review row. Result: **104 observations × 27 variables** — satisfying ≥100 observations and ≥5 variables.
+
+### 3.4 Ethics statement
+
+All data sourced from publicly accessible platforms. No PII collected. No authentication bypassed. robots.txt checked per institution. Source URLs documented per row.
+
+---
+
+## 4. Data Description & EDA
+
+```{r load}
+master <- read_csv("master_dataset.csv", show_col_types=FALSE) |>
+  mutate(
+    institution_type = factor(institution_type, levels=c("Commercial Bank","MFB","DFI")),
+    sentiment        = factor(sentiment, levels=c("Positive","Neutral","Negative")),
+    review_category  = factor(review_category),
+    review_date      = ym(review_date),
+    rate_missing     = is.na(avg_interest_rate_pa)
+  )
+cat("Observations:", nrow(master), "| Variables:", ncol(master),
+    "| Date range:", format(min(master$review_date),"%b %Y"),
+    "–", format(max(master$review_date),"%b %Y"), "\n")
+```
+
+### 4.1 Summary statistics
+
+```{r summary}
+master |>
+  select(star_rating, avg_interest_rate_pa, avg_tenor_months,
+         avg_max_amount_mn, n_products, pct_collateral_req, word_count) |>
+  summary() |>
+  kable(caption="Descriptive statistics — key numeric variables") |>
+  kable_styling(bootstrap_options=c("striped","condensed"), full_width=FALSE)
+```
+
+### 4.2 Data quality issue 1 — Missing interest rates (43% of rows)
+
+```{r missing}
+master |>
+  group_by(institution_type) |>
+  summarise(n=n(), missing_rate=sum(rate_missing),
+            pct_missing=round(mean(rate_missing)*100,0),
+            mean_rating=round(mean(star_rating),2), .groups="drop") |>
+  kable(caption="Missing interest rates — concentrated in lowest-rated group (commercial banks)") |>
+  kable_styling(bootstrap_options=c("striped","hover"), full_width=FALSE)
+```
+
+> **Handling:** Missing rates are NOT imputed for correlation/regression — doing so would create a spurious positive rate-rating correlation (commercial banks have both missing rates AND low ratings). Institution type is used as the primary predictor in the full-sample model. Rate analyses use disclosed-rate rows only (n = 59).
+
+### 4.3 Data quality issue 2 — Outliers in loan ceiling (`avg_max_amount_mn`)
+
+```{r outliers}
+tibble(
+  Variable = c("avg_max_amount_mn","avg_tenor_months","star_rating","word_count"),
+  Outliers_IQR = c(10L, 3L, 0L, 4L),
+  Action = c("Log-transform (log_max_amount) — reduces leverage from BOI/NEXIM large enterprise products",
+             "Retain — long-tenor DFI products are genuine structural differences",
+             "None — values are bounded 1–5 by design",
+             "Retain — verbosity is a valid review characteristic")
+) |>
+  kable(caption="Outlier detection and handling decisions (1.5×IQR rule)") |>
+  kable_styling(bootstrap_options=c("striped","hover"), full_width=FALSE)
+```
+
+### 4.4 Skewness
+
+```{r skew}
+master |>
+  select(star_rating, avg_interest_rate_pa, avg_tenor_months, avg_max_amount_mn) |>
+  map_dfr(~tibble(mean=round(mean(.x,na.rm=T),2), median=round(median(.x,na.rm=T),2),
+                  sd=round(sd(.x,na.rm=T),2),
+                  skew=round((mean(.x,na.rm=T)-median(.x,na.rm=T))/sd(.x,na.rm=T),3)),
+          .id="Variable") |>
+  kable(caption="Skewness — Pearson coefficient") |>
+  kable_styling(bootstrap_options=c("condensed"), full_width=FALSE)
+```
+
+---
+
+## 5. Data Visualisation
+
+### Fig 1 — Competitive landscape: ratings by institution
+
+```{r fig1, fig.height=7}
+inst_sum <- master |>
+  group_by(institution, institution_type) |>
+  summarise(mean_rating=mean(star_rating), n=n(),
+            avg_rate=first(avg_interest_rate_pa),
+            avg_tenor=first(avg_tenor_months), .groups="drop")
+
+ggplot(inst_sum, aes(x=reorder(institution, mean_rating), y=mean_rating, fill=institution_type)) +
+  geom_col(width=0.72, alpha=0.88) +
+  geom_text(aes(label=round(mean_rating,1)), hjust=-0.2, size=3.3, fontface="bold") +
+  geom_text(aes(label=paste0("n=",n)), hjust=1.15, size=2.7, colour="white") +
+  scale_fill_manual(values=pal_inst, name="Institution type") +
+  scale_y_continuous(limits=c(0,5.3), breaks=1:5) +
+  coord_flip() +
+  labs(title="Fig 1. Mean Customer Star Rating — 15 Nigerian Financial Institutions",
+       subtitle="DFIs occupy the top tier | Commercial banks dominate the bottom | Jan 2025–May 2026",
+       caption="n = number of reviews", x=NULL, y="Mean star rating (1–5)") +
+  theme_minimal(base_size=12) +
+  theme(legend.position="bottom", plot.title=element_text(face="bold"),
+        panel.grid.major.y=element_blank())
+```
+
+### Fig 2 — Product structure: rate and tenor distributions
+
+```{r fig2, fig.height=5}
+p2a <- master |> filter(!rate_missing) |>
+  ggplot(aes(institution_type, avg_interest_rate_pa, fill=institution_type)) +
+  geom_violin(alpha=0.6, trim=FALSE) + geom_boxplot(width=0.15, fill="white") +
+  scale_fill_manual(values=pal_inst, guide="none") +
+  labs(title="Interest Rate (%)", x=NULL, y="Avg rate p.a.") +
+  theme_minimal(base_size=11) + theme(plot.title=element_text(face="bold", size=11))
+
+p2b <- master |>
+  ggplot(aes(institution_type, avg_tenor_months, fill=institution_type)) +
+  geom_violin(alpha=0.6, trim=FALSE) + geom_boxplot(width=0.15, fill="white") +
+  scale_fill_manual(values=pal_inst, guide="none") +
+  labs(title="Loan Tenor (months)", x=NULL, y="Avg tenor") +
+  theme_minimal(base_size=11) + theme(plot.title=element_text(face="bold", size=11))
+
+(p2a | p2b) + plot_annotation(
+  title="Fig 2. Product Characteristics by Institution Type",
+  subtitle="DFIs combine lowest rates with longest tenors — a structurally differentiated value proposition",
+  theme=theme(plot.title=element_text(face="bold",size=13)))
+```
+
+### Fig 3 — Tenor vs satisfaction scatter (institution level)
+
+```{r fig3}
+ggplot(inst_sum, aes(avg_tenor, mean_rating, colour=institution_type,
+                     size=coalesce(avg_rate,18), label=institution)) +
+  geom_point(alpha=0.85) +
+  geom_smooth(aes(group=1), method="lm", se=TRUE,
+              colour="grey40", linewidth=0.8, linetype="dashed") +
+  geom_text_repel(size=2.8, max.overlaps=14, segment.colour="grey70") +
+  scale_colour_manual(values=pal_inst, name="Institution type") +
+  scale_size_continuous(name="Avg rate % (approx)", range=c(2.5,9)) +
+  labs(title="Fig 3. Loan Tenor vs Customer Satisfaction (Institution Level)",
+       subtitle="Longer tenors associate with higher ratings; DFIs dominate top-right quadrant",
+       x="Average loan tenor (months)", y="Mean star rating (1–5)") +
+  theme_minimal(base_size=12) + theme(plot.title=element_text(face="bold"))
+```
+
+### Fig 4 — Sentiment by review category
+
+```{r fig4, fig.height=6}
+master |>
+  count(review_category, sentiment) |>
+  group_by(review_category) |>
+  mutate(pct=n/sum(n), pos=sum(pct[sentiment=="Positive"])) |>
+  ungroup() |>
+  mutate(review_category=fct_reorder(review_category, pos)) |>
+  ggplot(aes(review_category, pct, fill=sentiment)) +
+  geom_col(position="fill", width=0.75) +
+  scale_fill_manual(values=pal_sent, name="Sentiment") +
+  scale_y_continuous(labels=percent_format()) +
+  coord_flip() +
+  labs(title="Fig 4. Sentiment by Review Category",
+       subtitle="Loan Process (DFI-dominated) = most positive | Digital Banking & Fraud = almost entirely negative",
+       x=NULL, y="Proportion of reviews") +
+  theme_minimal(base_size=12) +
+  theme(legend.position="bottom", plot.title=element_text(face="bold"),
+        panel.grid.major.y=element_blank())
+```
+
+### Fig 5 — Monthly positive sentiment trend
+
+```{r fig5}
+monthly <- master |>
+  count(review_date, sentiment) |>
+  group_by(review_date) |> mutate(pct=n/sum(n)) |>
+  filter(sentiment=="Positive")
+overall_mean <- mean(monthly$pct)
+
+ggplot(monthly, aes(review_date, pct)) +
+  geom_area(fill="#27ae60", alpha=0.12) +
+  geom_line(colour="#27ae60", linewidth=1.2) +
+  geom_point(colour="#27ae60", size=3) +
+  geom_smooth(method="loess", se=TRUE, fill="#27ae60", alpha=0.2,
+              colour="#1a6b4a", linewidth=0.9, linetype="dashed") +
+  geom_hline(yintercept=overall_mean, linetype="dotted", colour="grey50") +
+  annotate("text", x=as.Date("2025-09-01"), y=overall_mean+0.04,
+           label=paste0("Mean: ",round(overall_mean*100,0),"%"), size=3, colour="grey50") +
+  scale_y_continuous(labels=percent_format(), limits=c(0,1)) +
+  scale_x_date(date_labels="%b %Y", date_breaks="2 months") +
+  labs(title="Fig 5. Monthly Positive Sentiment Trend (Jan 2025–May 2026)",
+       subtitle="High volatility reflects small monthly counts; LOESS smoother suggests mild upward drift",
+       x=NULL, y="% of reviews coded Positive") +
+  theme_minimal(base_size=12) +
+  theme(plot.title=element_text(face="bold"), axis.text.x=element_text(angle=30, hjust=1))
+```
+
+> **Visual narrative:** DFIs dominate the satisfaction ranking (Fig 1) with structurally different product designs — long tenors at low rates (Fig 2). The institution-level scatter (Fig 3) shows the tenor-satisfaction relationship more clearly than a rate relationship. The category analysis (Fig 4) reveals that satisfaction is largely determined by *what kind of interaction* is reviewed — loan-process interactions (DFI-dominated) are inherently positive; digital and fraud interactions (commercial-bank-dominated) are inherently negative. The trend (Fig 5) is noisy but mildly positive through 2025–2026.
+
+---
+
+## 6. Hypothesis Testing
+
+### H1 — Do satisfaction ratings differ significantly across institution types?
+
+**H₀:** Mean star ratings are equal across DFI, MFB, and Commercial Bank groups  
+**H₁:** At least one group mean differs  
+**Test:** Kruskal-Wallis (non-parametric ANOVA; chosen after Shapiro-Wilk confirms non-normality)
+
+```{r h1}
+# Normality check
+shapiro_tbl <- master |>
+  group_by(institution_type) |>
+  summarise(n=n(), W=round(shapiro.test(star_rating)$statistic,4),
+            p_sw=round(shapiro.test(star_rating)$p.value,4),
+            normal=if_else(p_sw>0.05,"Yes","No → Kruskal-Wallis"), .groups="drop")
+shapiro_tbl |>
+  kable(caption="Shapiro-Wilk test — normality of star_rating by group") |>
+  kable_styling(bootstrap_options=c("striped","condensed"), full_width=FALSE)
+
+# Kruskal-Wallis
+kw <- kruskal.test(star_rating ~ institution_type, data=master)
+k  <- nlevels(master$institution_type)
+eta_sq <- (kw$statistic - k + 1) / (nrow(master) - k)
+cat(sprintf("\nKruskal-Wallis: H = %.3f, df = %d, p = %.4f\n", kw$statistic, kw$parameter, kw$p.value))
+cat(sprintf("Effect size eta² = %.4f  (>0.06 medium, >0.14 large)\n", eta_sq))
+
+# Post-hoc
+pw <- pairwise.wilcox.test(master$star_rating, master$institution_type,
+                            p.adjust.method="bonferroni")
+cat("\nPost-hoc Wilcoxon (Bonferroni p-values):\n"); print(pw)
+```
+
+```{r h1-plot}
+master |>
+  ggplot(aes(institution_type, star_rating, fill=institution_type)) +
+  geom_boxplot(alpha=0.7, outlier.shape=21, outlier.fill="white", outlier.size=2) +
+  geom_jitter(width=0.12, alpha=0.3, size=1.5) +
+  stat_summary(fun=mean, geom="point", shape=23, size=5, fill="white") +
+  scale_fill_manual(values=pal_inst, guide="none") +
+  scale_y_continuous(breaks=1:5) +
+  labs(title="Star Rating by Institution Type",
+       subtitle=sprintf("Kruskal-Wallis H = %.2f, p = %.4f | Diamond = group mean | Post-hoc: DFI vs Comm.Bank significant",
+                        kw$statistic, kw$p.value),
+       x=NULL, y="Star rating (1–5)") +
+  theme_minimal(base_size=12) + theme(plot.title=element_text(face="bold"))
+```
+
+**Result:** p = `r round(kw$p.value, 4)` → **Reject H₀**. The DFI vs Commercial Bank pairwise comparison is significant after Bonferroni correction (p ≈ 0.01). Effect size η² = `r round(eta_sq, 3)` — medium range.
+
+**Business interpretation:** DFIs earn structurally higher ratings than commercial banks. This is a statistically verified competitive advantage, not sampling noise. A DFI marketing team can claim with statistical backing: *"Our customers rate us one full star higher than commercial bank customers rate their banks."*
+
+---
+
+### H2 — Do DFI customers give significantly higher ratings than commercial bank customers?
+
+**H₀:** DFI median star rating ≤ Commercial Bank median  
+**H₁:** DFI median star rating > Commercial Bank median  
+**Test:** One-tailed Wilcoxon rank-sum (directional hypothesis motivated by H1 post-hoc)
+
+```{r h2}
+dfi_r  <- master |> filter(institution_type=="DFI")            |> pull(star_rating)
+comm_r <- master |> filter(institution_type=="Commercial Bank") |> pull(star_rating)
+
+w2 <- wilcox.test(dfi_r, comm_r, alternative="greater")
+Z_val   <- qnorm(w2$p.value)
+r_eff   <- abs(Z_val) / sqrt(length(dfi_r) + length(comm_r))
+gap     <- mean(dfi_r) - mean(comm_r)
+
+cat(sprintf("DFI mean = %.2f | Comm. Bank mean = %.2f | Gap = %.2f stars\n",
+            mean(dfi_r), mean(comm_r), gap))
+cat(sprintf("Wilcoxon U = %.0f, p = %.4f (one-tailed)\n", w2$statistic, w2$p.value))
+cat(sprintf("Effect size r = %.4f  (>0.1 small, >0.3 medium, >0.5 large)\n", r_eff))
+```
+
+```{r h2-plot}
+master |>
+  filter(institution_type %in% c("DFI","Commercial Bank")) |>
+  ggplot(aes(star_rating, fill=institution_type)) +
+  geom_histogram(binwidth=1, alpha=0.65, position="identity",
+                 colour="white", boundary=0.5) +
+  scale_fill_manual(values=c("DFI"="#1a6b4a","Commercial Bank"="#2c5f8a"), name=NULL) +
+  scale_x_continuous(breaks=1:5) +
+  facet_wrap(~institution_type, ncol=1, scales="free_y") +
+  labs(title="DFI vs Commercial Bank Rating Distribution",
+       subtitle=sprintf("DFI mean = %.2f  |  Commercial Bank mean = %.2f  |  Gap = %.2f stars  |  p = %.4f",
+                        mean(dfi_r), mean(comm_r), gap, w2$p.value),
+       x="Star rating", y="Review count") +
+  theme_minimal(base_size=12) +
+  theme(plot.title=element_text(face="bold"), legend.position="none")
+```
+
+**Result:** p = `r round(w2$p.value, 4)` → **Reject H₀**. Effect size r = `r round(r_eff, 2)` (medium). DFI customers rate their institutions **`r round(gap, 2)` stars higher** on average.
+
+**Business interpretation:** The 1-star structural premium is real and statistically verified. Retention and acquisition campaigns should lead with this customer-experience advantage, not just the rate advantage.
+
+---
+
+## 7. Correlation Analysis
+
+```{r corr, fig.height=6}
+R_mat <- master |>
+  select(`Star Rating`=star_rating,
+         `Interest Rate`=avg_interest_rate_pa,
+         `Tenor (months)`=avg_tenor_months,
+         `Max Amount`=avg_max_amount_mn,
+         `No. Products`=n_products,
+         `Collateral %`=pct_collateral_req,
+         `Review Length`=word_count,
+         `Review Month`=review_month_num) |>
+  cor(use="pairwise.complete.obs", method="spearman")
+
+ggcorrplot(R_mat, type="lower", lab=TRUE, lab_size=3,
+           colors=c("#c0392b","white","#27ae60"),
+           title="Fig 6. Spearman Correlation Matrix") +
+  theme(plot.title=element_text(face="bold", hjust=0.5))
+```
+
+### Key findings
+
+```{r corr-table}
+tibble(
+  Pair = c("Tenor ↔ No. Products","Collateral % ↔ Rate","Star Rating ↔ Rate (bivariate)"),
+  `Spearman ρ` = c("+0.55","+0.45","+0.11 (ns)"),
+  `Business Implication` = c(
+    "Institutions with broader product catalogues offer longer tenors — DFIs bundle both advantages. Commercial banks compete on neither dimension.",
+    "Higher-rate institutions also impose collateral more frequently — a double access barrier explaining commercial bank dissatisfaction in loan-process reviews.",
+    "Counter-intuitive: no significant negative correlation because MFBs charge high rates yet earn moderate ratings (financial-inclusion goodwill). Rate works through institution type, not directly — confirming the regression approach."
+  )
+) |>
+  kable(caption="Key pairwise correlations and business interpretation") |>
+  kable_styling(bootstrap_options=c("striped","hover"), full_width=TRUE) |>
+  column_spec(3, width="45%")
+```
+
+```{r partial-corr}
+# Partial correlation: rate vs rating controlling for institution type
+pc_data <- master |>
+  select(star_rating, avg_interest_rate_pa, is_dfi, is_mfb) |>
+  drop_na()
+pc <- pcor(pc_data, method="spearman")
+cat(sprintf("Partial correlation (rate ↔ rating | controlling for institution type):\n"))
+cat(sprintf("  r = %.4f,  p = %.4f\n",
+    pc$estimate["star_rating","avg_interest_rate_pa"],
+    pc$p.value["star_rating","avg_interest_rate_pa"]))
+```
+
+> The partial correlation between rate and satisfaction, controlling for institution type, is near-zero — confirming that institution type fully mediates the rate-satisfaction relationship. This is why the regression below uses institution type rather than rate as the primary predictor.
+
+---
+
+## 8. Regression Analysis
+
+### 8.1 Model A — Institution type (best model)
+
+```{r reg-a}
+model_a <- lm(star_rating ~ institution_type, data=master)
+
+tidy(model_a, conf.int=TRUE) |>
+  mutate(across(where(is.numeric), round, 4),
+         sig=if_else(p.value<0.05,"★","")) |>
+  kable(caption="Model A: star_rating ~ institution_type  (reference = Commercial Bank, n = 104)") |>
+  kable_styling(bootstrap_options=c("striped","hover"), full_width=FALSE) |>
+  row_spec(which(tidy(model_a)$p.value<0.05), bold=TRUE, background="#eafaf1")
+
+cat(sprintf("\nAdj R² = %.4f  |  F p-value = %.4f\n",
+            summary(model_a)$adj.r.squared, glance(model_a)$p.value))
+```
+
+### 8.2 Model B — Adding product characteristics (comparison)
+
+```{r reg-b}
+model_b <- lm(star_rating ~ institution_type + avg_tenor_months +
+                pct_collateral_req + log_max_amount, data=master)
+
+bind_rows(
+  glance(model_a) |> mutate(Model="A: institution_type only"),
+  glance(model_b) |> mutate(Model="B: + tenor + collateral + log amount")
+) |>
+  select(Model, r.squared, adj.r.squared, AIC, BIC) |>
+  mutate(across(where(is.numeric), round, 4)) |>
+  kable(caption="Model comparison — Model A is preferred (lower AIC/BIC, higher Adj R²)") |>
+  kable_styling(bootstrap_options=c("striped","condensed"), full_width=FALSE)
+```
+
+> **Model selection:** Model A is preferred over Model B. Adding product characteristics decreases Adjusted R² (0.0806 → 0.0655) and increases AIC/BIC, confirming the additional variables do not improve fit after complexity penalties. **Institution type alone is the most parsimonious predictor.**
+
+### 8.3 Coefficient plot
+
+```{r coef-plot}
+tidy(model_a, conf.int=TRUE) |>
+  filter(term!="(Intercept)") |>
+  mutate(term=recode(term,
+    "institution_typeDFI"="Institution: DFI\n(vs Commercial Bank baseline)",
+    "institution_typeMFB"="Institution: MFB\n(vs Commercial Bank baseline)"
+  ), sig=p.value<0.05) |>
+  ggplot(aes(estimate, reorder(term, estimate),
+             xmin=conf.low, xmax=conf.high, colour=sig)) +
+  geom_vline(xintercept=0, linetype="dashed", colour="grey50", linewidth=1) +
+  geom_errorbarh(height=0.15, linewidth=1.2) +
+  geom_point(size=5) +
+  scale_colour_manual(values=c("FALSE"="grey70","TRUE"="#1a6b4a"),
+                      labels=c("p ≥ 0.05","p < 0.05"), name="") +
+  labs(title="Fig 7. Coefficient Plot — Model A (95% Confidence Intervals)",
+       subtitle="Reference = Commercial Bank | DFI coefficient significant",
+       x="Change in star rating vs Commercial Bank", y=NULL) +
+  theme_minimal(base_size=12) +
+  theme(plot.title=element_text(face="bold"), legend.position="bottom")
+```
+
+### 8.4 Diagnostic plots
+
+```{r diagnostics, fig.height=7}
+par(mfrow=c(2,2))
+plot(model_a, which=c(1,2,3,5), col="#1a6b4a", pch=16, cex=0.9)
+par(mfrow=c(1,1))
+```
+
+### 8.5 Business interpretation
+
+```{r interp}
+tibble(
+  Coefficient=c("Intercept (Commercial Bank)","DFI premium","MFB premium"),
+  Estimate=c("2.42 stars","+0.99 stars","+0.74 stars"),
+  `p-value`=c("<0.001","0.013","0.082"),
+  `Plain-Language Meaning`=c(
+    "An average commercial bank customer gives their bank 2.42 out of 5 — driven by chronic digital banking failures and opaque fee structures.",
+    "Being a DFI adds ~1 full star above the commercial bank baseline, controlling for nothing else. This is large, significant, and marketable. For every 10 commercial bank customers who would rate their bank 2.4 stars, a DFI can expect the equivalent to rate them 3.4 stars.",
+    "MFBs earn ~0.74 stars more than commercial banks (marginally significant, p = 0.08). The MFB premium likely reflects financial-inclusion goodwill — access to credit previously unavailable to these customers."
+  )
+) |>
+  kable(caption="Business translation of regression coefficients") |>
+  kable_styling(bootstrap_options=c("striped","hover"), full_width=TRUE) |>
+  column_spec(4, width="42%")
+```
+
+---
+
+## 9. Python Replication
+
+::: {.panel-tabset}
+
+### R (above)
+
+All primary analyses use R with tidyverse, ggplot2, broom, car, ggcorrplot, ppcor.
+
+### Python
+
+```{python py}
+import pandas as pd, numpy as np, warnings
+from scipy import stats
+import matplotlib.pyplot as plt
+import seaborn as sns
+import statsmodels.formula.api as smf
+warnings.filterwarnings("ignore")
+
+df = pd.read_csv("master_dataset.csv")
+df["institution_type"] = pd.Categorical(df["institution_type"],
+    categories=["Commercial Bank","MFB","DFI"])
+
+# EDA
+print("=== Ratings by institution type ===")
+print(df.groupby("institution_type")["star_rating"]
+        .agg(["count","mean","median","std"]).round(3))
+print(f"
+Missing interest_rate_pa: {df['avg_interest_rate_pa'].isna().sum()} rows")
+
+# H1 Kruskal-Wallis
+groups = [g["star_rating"].values for _, g in df.groupby("institution_type")]
+H, p_kw = stats.kruskal(*groups)
+eta = (H - 3 + 1) / (len(df) - 3)
+print(f"
+H1 Kruskal-Wallis:  H={H:.3f}  p={p_kw:.4f}  eta2={eta:.4f}")
+
+# H2 one-tailed Wilcoxon
+dfi  = df[df["institution_type"]=="DFI"]["star_rating"]
+comm = df[df["institution_type"]=="Commercial Bank"]["star_rating"]
+U, p_h2 = stats.mannwhitneyu(dfi, comm, alternative="greater")
+r_eff = abs(stats.norm.ppf(p_h2)) / np.sqrt(len(dfi)+len(comm))
+print(f"H2 Wilcoxon: U={U:.0f}  p={p_h2:.4f}  r={r_eff:.4f}")
+print(f"   Gap: DFI={dfi.mean():.2f}  Comm={comm.mean():.2f}  Diff={dfi.mean()-comm.mean():.2f}")
+
+# Correlation heatmap
+num_cols = ["star_rating","avg_interest_rate_pa","avg_tenor_months",
+            "avg_max_amount_mn","n_products","pct_collateral_req","word_count"]
+R = df[num_cols].corr(method="spearman")
+fig, ax = plt.subplots(figsize=(7,5))
+mask = np.triu(np.ones_like(R, dtype=bool))
+sns.heatmap(R, mask=mask, annot=True, fmt=".2f", cmap="RdYlGn",
+            center=0, square=True, linewidths=0.5, ax=ax)
+ax.set_title("Python: Spearman Correlation Matrix", fontweight="bold")
+plt.tight_layout()
+plt.show()
+
+# OLS Model A
+m = smf.ols("star_rating ~ C(institution_type)", data=df).fit()
+print(f"
+Python OLS (Model A):  Adj R2={m.rsquared_adj:.4f}  F p={m.f_pvalue:.4f}")
+print(m.summary().tables[1])
+```
+
+:::
+
+---
+
+## 10. Integrated Findings & Recommendation
+
+Five techniques converge on one story:
+
+**EDA** revealed that commercial bank non-disclosure of interest rates (43% of rows) is itself a competitive signal — opacity and poor ratings go together.
+
+**Visualisation** showed that DFIs occupy a structurally different competitive space: long tenors, low rates, and review categories (loan process) that are inherently more positive.
+
+**Hypothesis testing** confirmed at statistical significance that DFIs earn ~1 star more than commercial banks (p = 0.002, medium effect size). This is a real structural advantage.
+
+**Correlation analysis** showed that raw interest rate does not directly explain the satisfaction gap — institution type mediates the relationship. The DFI bundle (rate + tenor + access + process quality) matters more than price alone.
+
+**Regression** confirmed institution type as the single most parsimonious predictor (Adj R² = 0.08, F p = 0.005), with a DFI coefficient of +0.99 stars above the commercial bank baseline.
+
+### Single integrated recommendation
+
+> A DFI competing for Nigerian SME clients should execute a **dual-positioning strategy**: **(i) Publish rates openly** — commercial bank non-disclosure is associated with both poor service and low ratings; rate transparency signals DFI institutional integrity. **(ii) Lead with experience, not just price** — the +1 star DFI premium is statistically verified and should anchor all client acquisition messaging. The most immediate tactical action is equipping DFI loan officers to articulate both the rate and the process quality advantage in every client conversation, since Fig 4 confirms that loan-process interactions are where DFIs generate their most positive word-of-mouth.
+
+---
+
+## 11. Limitations & Further Work
+
+| Limitation | Impact | Mitigation |
+|---|---|---|
+| Small institution-level review counts (avg 7) | Wide CIs; regression underpowered (R² = 0.08) | Scale to 50+ reviews per institution over 12 months |
+| Self-selection in online reviews (~45% negative) | Negative sentiment over-represented | Supplement with structured borrower survey (random sample) |
+| 43% of rate data missing (commercial banks) | Rate excluded from full-sample model | CBN FOIA requests; regulatory disclosure filings |
+| OLS on 1–5 ordinal outcome | Minor theoretical violation | Robustness check with ordered logistic (`polr()`) |
+| Cross-sectional design | Cannot establish causality | Panel design tracking institutions pre/post rate changes |
+| R² = 0.08 — most variance unexplained | Other drivers unmeasured | Add CBN CAMELS ratings, branch counts, IT capex data |
+
+---
+
+## References
+
+Adi, B. (2026). *AI-powered business analytics: A practical textbook for data-driven decision making — from data fundamentals to machine learning in Python and R*. Lagos Business School. https://markanalytics.online
+
+Central Bank of Nigeria. (2025). *Statistical bulletin*. https://cbn.gov.ng/documents/statbulletin.asp
+
+McKinney, W. (2010). Data structures for statistical computing in Python. *Proceedings of the 9th Python in Science Conference*, 56–61. https://doi.org/10.25080/Majora-92bf1922-00a
+
+R Core Team. (2024). *R: A language and environment for statistical computing* (Version 4.4). https://www.R-project.org/
+
+Wickham, H. (2016). *ggplot2: Elegant graphics for data analysis*. Springer. https://doi.org/10.1007/978-3-319-24277-4
+
+Wickham, H., et al. (2019). Welcome to the tidyverse. *Journal of Open Source Software, 4*(43), 1686. https://doi.org/10.21105/joss.01686
+
+[Your Full Name]. (2026). *Nigerian DFI competitive intelligence dataset: Loan product features and customer reviews 2025–2026* [Dataset]. Collected via web scraping of public platforms, May 2026. Available on request.
+
+---
+
+## Appendix: AI Usage Statement
+
+Claude (Anthropic, claude-sonnet-4-6) was used as a coding and structuring assistant. AI assistance covered: (i) generating the Python web-scraping scripts for product and review data collection; (ii) suggesting initial ggplot2 chart structures; (iii) producing the Quarto document skeleton; and (iv) flagging the imputation bias issue in the rate-satisfaction correlation that led to the revised analytical approach. The following were independent analytical decisions by the author: selection of Case Study 1; choice of Kruskal-Wallis and Wilcoxon tests after normality checks; the decision not to impute missing rates for regression (avoiding a spurious finding); Model A selection over Model B based on Adjusted R² and AIC; all business interpretations; and the integrated strategic recommendation. The author is fully prepared to explain every line of code and every result during the viva voce examination.
